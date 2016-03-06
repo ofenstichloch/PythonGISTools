@@ -4,21 +4,19 @@ from ArtificialGrid import ArtificialGrid
 
 #TODO:
 #Check addin
-#check version to use arcpy.da
 
 
 def main():
     #Check Input--------------------------------------------------------------------------------------------------------
-    if arcpy.GetArgumentCount() != 7:
+    if arcpy.GetArgumentCount() != 6:
         arcpy.AddError("Invalid parameters")
         return None
     inRaster = arcpy.GetParameterAsText(0) #Input Raster dataset
     count = int(arcpy.GetParameterAsText(1))
     countType = arcpy.GetParameterAsText(2)
     cellType = arcpy.GetParameterAsText(3)
-    align = arcpy.GetParameterAsText(4)
-    statisticsType =  arcpy.GetParameterAsText(5) #Statistic type as supported by ZonalStatisticsAsTable
-    outFeature = arcpy.GetParameterAsText(6) #Output Feature path
+    statisticsType =  arcpy.GetParameterAsText(4) #Statistic type as supported by ZonalStatisticsAsTable
+    outFeature = arcpy.GetParameterAsText(5) #Output Feature path
     arcpy.env.overwriteOutput = True
     workspace = arcpy.env.workspace
     outShape = outFeature+"_shp"
@@ -32,14 +30,20 @@ def main():
     end = arcpy.sa.Raster(inRaster).extent.upperRight
     width = end.X-origin.X
     height = end.Y - origin.Y
-    if countType == "Rows":
-        cellSize = height/count
+    rows = -1 if countType == "Columns" else count
+    cols = -1 if countType == "Rows" else count
+    if cellType == "Hexagon" and countType == "Rows":
+        if count%2==0:
+            cellSize = height / (((count/2) * 3 - 0.5) / 2.)
+        else:
+            cellSize = height / (((count - 1) / 2 * 3 + 1) / 2.)
     else:
-        cellSize = width/count
-    arcpy.AddMessage(cellSize)
-    arcpy.AddMessage(width)
+        if countType == "Rows":
+            cellSize = height/count
+        else:
+            cellSize = width/count
     grid = ArtificialGrid()
-    ArtificialGrid.createGrid(grid,origin,end,cellType,align,cellSize,outShape)
+    ArtificialGrid.createGrid(grid,origin,end,cellType,"false",cellSize,outShape,rows, cols)
 
 
 
@@ -69,6 +73,7 @@ def main():
     #Cleanup
     try:
         arcpy.Delete_management(outShape)
+        arcpy.Delete_management("in_memory\statisticsTable")
     except Exception as e:
         arcpy.AddMessage("Could not delete temporary file")
         arcpy.AddMessage(e.message)

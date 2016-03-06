@@ -10,7 +10,7 @@ class ArtificialGrid:
     xOffset = 0
     yOffset = 0
 
-    def createGrid(self,origin,end,cellType,align,cellSize,outShape):
+    def createGrid(self,origin,end,cellType,align,cellSize,outShape, rows=-1, cols=-1):
         width = end.X-origin.X
         height = end.Y - origin.Y
         xOffset = 0
@@ -34,23 +34,23 @@ class ArtificialGrid:
                 else:
                     yOverhead -= cellSize/4
                 yOffset = -yOverhead/2
-            self.constructHexagonsBySize(origin, end, cellSize/2,xOffset,yOffset,outShape)
+            self.constructHexagonsBySize(origin, end, cellSize/2,xOffset,yOffset,outShape, rows, cols)
         elif cellType == "Square":
             if align == "true":
                 xOffset = -(math.ceil(width/cellSize)*cellSize-width)/2
                 yOffset = -(math.ceil(height/cellSize)*cellSize-height)/2
-            self.constructSquaresBySize(origin, end, cellSize,xOffset,yOffset, outShape)
+            self.constructSquaresBySize(origin, end, cellSize,xOffset,yOffset, outShape, rows, cols)
 
 
 
-    def constructHexagonsBySize(self, origin, end, radius, xOffset, yOffset, feature):
+    def constructHexagonsBySize(self, origin, end, radius, xOffset, yOffset, feature, rows, cols):
         self.radius = radius
         self.origin = origin
         self.end = end
         self.xOffset = xOffset
         self.yOffset = yOffset
         try:
-            self.createHexagonCenterPoints()
+            self.createHexagonCenterPoints(rows, cols)
         except Exception as e:
             arcpy.AddError("An error has occurred generating the center points for the shapes")
             arcpy.AddError(e.message)
@@ -75,20 +75,27 @@ class ArtificialGrid:
             i=i+1
             cursor.updateRow(row)
 
-    def createHexagonCenterPoints(self):
+    def createHexagonCenterPoints(self,rows,cols):
+        countRows = True if rows!=-1 else False
+        countCols = True if cols!=-1 else False
+        colsOld = cols
         currentY = self.origin.Y+self.radius/2+self.yOffset
-        odd = False
-        while (currentY-self.radius/2 < self.end.Y and odd) or (currentY-self.radius < self.end.Y and not odd) : #Generate rows until extent reached
-            if odd:
+        even = False
+        while ((currentY-self.radius/2 < self.end.Y and even) or (currentY-self.radius < self.end.Y and not even)) and (rows > 0 or not countRows): #Generate rows until extent reached
+            if even:
                 currentX=self.origin.X+self.xOffset
-                odd = False
+                cols = colsOld + 1
+                even = False
             else:
                 currentX = self.origin.X+self.radius+self.xOffset
-                odd = True
-            while currentX-self.radius < self.end.X: #Fill rows until extent reached
+                cols = colsOld
+                even = True
+            while currentX-self.radius < self.end.X and (cols > 0 or not countCols): #Fill rows until extent reached
                 self.centers.append(arcpy.Point(currentX,currentY))
                 currentX+=2*self.radius
+                cols=cols-1
             currentY+=1.5*self.radius
+            rows = rows - 1
 
     def createHexagons(self):
         hexagons = []
@@ -104,14 +111,14 @@ class ArtificialGrid:
             hexagons.append( arcpy.Polygon(hexagon))
         self.grid = list(hexagons)
 
-    def constructSquaresBySize(self, origin, end, length, xOffset, yOffset, feature):
+    def constructSquaresBySize(self, origin, end, length, xOffset, yOffset, feature, rows, cols):
         self.radius = length
         self.origin = origin
         self.end = end
         self.xOffset = xOffset
         self.yOffset = yOffset
         try:
-            self.createSquares()
+            self.createSquares(rows, cols)
             arcpy.CopyFeatures_management(self.grid,feature)
         except Exception as e:
             arcpy.AddError("An error has occurred generating the squares")
@@ -122,11 +129,16 @@ class ArtificialGrid:
             arcpy.AddError("An error has occurred numbering the generated polygons")
             arcpy.AddError(e.message)
 
-    def createSquares(self):
+    def createSquares(self,rows, cols):
+        countRows = True if rows!=-1 else False
+        countCols = True if cols!=-1 else False
         currentY = self.origin.Y+self.yOffset
-        while currentY < self.end.Y:
+        colsOld = cols
+        while currentY < self.end.Y and (not countRows or rows > 0):
+
             currentX = self.origin.X+self.xOffset
-            while currentX < self.end.X:
+            cols = colsOld
+            while currentX < self.end.X and (not countCols or cols >0):
                 square = arcpy.Array()
                 square.append(arcpy.Point(currentX,currentY))
                 square.append(arcpy.Point(currentX+self.radius,currentY))
@@ -135,4 +147,6 @@ class ArtificialGrid:
                 square.append(square[0])
                 self.grid.append(arcpy.Polygon(square))
                 currentX+=self.radius
+                cols =cols -1
             currentY+=self.radius
+            rows = rows -1

@@ -67,6 +67,7 @@ def main():
     #Cleanup
     try:
         arcpy.Delete_management(outShape)
+        arcpy.Delete_management("in_memory\statisticsTable")
     except Exception as e:
         arcpy.AddMessage("Could not delete temporary file")
         arcpy.AddMessage(e.message)
