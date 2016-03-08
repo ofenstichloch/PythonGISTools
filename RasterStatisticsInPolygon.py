@@ -1,8 +1,5 @@
 import arcpy
 
-#TODO:
-#Check: Extent,
-
 
 def main():
     try:

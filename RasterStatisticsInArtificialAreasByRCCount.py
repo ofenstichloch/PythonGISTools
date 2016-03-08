@@ -2,9 +2,6 @@ import arcpy
 import math
 from ArtificialGrid import ArtificialGrid
 
-#TODO:
-#Check addin
-
 
 def main():
     try:

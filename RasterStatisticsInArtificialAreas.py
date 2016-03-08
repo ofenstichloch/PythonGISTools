@@ -2,15 +2,6 @@ import arcpy
 import math
 from ArtificialGrid import ArtificialGrid
 
-#TODO:
-#Check addin
-#check version to use arcpy.da
-
-
-#Fragen:
-#Wie funktioniert ein JOIN, sodass arcmap den auch erkennt? Doc hilft nicht weiter
-#Warum extent angeben? Damit lassen sich keine shapes erzeugen
-
 #1. Read Input
 #2. Generate specific Areas
 #3. Calculate
