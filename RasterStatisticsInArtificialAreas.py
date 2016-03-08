@@ -16,6 +16,14 @@ from ArtificialGrid import ArtificialGrid
 #3. Calculate
 
 def main():
+    try:
+        # Check License
+        if arcpy.CheckExtension("Spatial") == 'Available':
+            arcpy.CheckOutExtension("Spatial")
+            arcpy.AddMessage("SA License activated")
+    except:
+        arcpy.AddError("SA licence could not be loaded")
+        return
     #Check Input--------------------------------------------------------------------------------------------------------
     if arcpy.GetArgumentCount() != 6:
         arcpy.AddError("Invalid parameters")
@@ -72,6 +80,10 @@ def main():
         arcpy.AddMessage("Could not delete temporary file")
         arcpy.AddMessage(e.message)
 
+    try:
+        arcpy.CheckInExtension("Spatial")
+    except:
+        arcpy.AddError("Could not free SA license")
 
 
 main()

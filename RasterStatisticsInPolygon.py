@@ -5,6 +5,14 @@ import arcpy
 
 
 def main():
+    try:
+        # Check License
+        if arcpy.CheckExtension("Spatial") == 'Available':
+            arcpy.CheckOutExtension("Spatial")
+            arcpy.AddMessage("SA License activated")
+    except:
+        arcpy.AddError("SA licence could not be loaded")
+        return
     if arcpy.GetArgumentCount() != 5:
         arcpy.AddError("Invalid parameters")
         return None
@@ -32,5 +40,10 @@ def main():
     #Cleanup
     arcpy.Delete_management(outShape)
     arcpy.Delete_management("in_memory\statisticsTable")
+
+    try:
+        arcpy.CheckInExtension("Spatial")
+    except:
+        arcpy.AddError("Could not free SA license")
 
 main()
