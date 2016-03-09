@@ -37,40 +37,29 @@ def main():
     origin = arcpy.sa.Raster(inRaster).extent.lowerLeft #Origin in ArcMap is lower left corner
     end = arcpy.sa.Raster(inRaster).extent.upperRight
     grid = ArtificialGrid()
-    ArtificialGrid.createGrid(grid,origin,end,cellType,align,cellSize,outShape)
 
-
-    #Create Layer and join table
     try:
+        ArtificialGrid.createGrid(grid,origin,end,cellType,align,cellSize,workspace,outShape)
+        #Create Layer and join table
         arcpy.DefineProjection_management(outShape,arcpy.Describe(inRaster).spatialReference)
-    except Exception as e:
-        arcpy.AddMessage("Could not alter spatial reference")
-        arcpy.AddMessage(e.message)
-    arcpy.AddMessage("Starting Zonal Statistics")
-    statTable = r'in_memory\statisticsTable'
-    try:
-        arcpy.sa.ZonalStatisticsAsTable(outShape,"ID",inRaster,statTable,"DATA",statisticsType)
+        arcpy.AddMessage("Starting Zonal Statistics")
+        statTable = r'in_memory\statisticsTable'
+        arcpy.sa.ZonalStatisticsAsTable(workspace+"\\"+outShape,"ID",inRaster,statTable,"DATA",statisticsType)
         arcpy.TableToTable_conversion(statTable,workspace,outFeature+"_Table")
-    except Exception as e:
-        arcpy.AddMessage("Could not crete zonal statistics")
-        arcpy.AddMessage(e.message)
-    arcpy.AddMessage("Joining and creating layer")
-    layer = outFeature+"_Layer"
-    try:
+        arcpy.AddMessage("Joining and creating layer")
+        layer = outFeature+"_Layer"
         arcpy.MakeFeatureLayer_management(outShape,layer)
         arcpy.AddJoin_management(layer,"ID",outFeature+"_Table","ID")
         arcpy.FeatureClassToFeatureClass_conversion(layer,workspace,outFeature)
     except Exception as e:
-        arcpy.AddMessage("Could not save final result")
-        arcpy.AddMessage(e.message)
-    #Cleanup
-    try:
-        arcpy.Delete_management(outShape)
-        arcpy.Delete_management("in_memory\statisticsTable")
-    except Exception as e:
-        arcpy.AddMessage("Could not delete temporary file")
-        arcpy.AddMessage(e.message)
-
+        arcpy.AddError(e.message)
+    finally:
+        try:
+            arcpy.Delete_management(outShape)
+            arcpy.Delete_management("in_memory\statisticsTable")
+        except Exception as e:
+            arcpy.AddError("Could not delete temporary file")
+            arcpy.AddError(e.message)
     try:
         arcpy.CheckInExtension("Spatial")
     except:
